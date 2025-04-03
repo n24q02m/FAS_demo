@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Face Anti-Spoofing Demo</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Face Anti-Spoofing Demo</h1>
+        <div class="description">
+          Kiểm tra khuôn mặt thật hay giả mạo với các mô hình AI
+        </div>
+      </header>
+
+      <div class="card">
+        <div class="camera-container">
+          <video id="video" class="video-stream" autoplay playsinline></video>
+          <canvas id="canvas" class="canvas"></canvas>
+        </div>
+
+        <div class="controls">
+          <select id="modelSelect" class="model-select">
+            <option value="vit_base">ViT Base</option>
+            <option value="vit_tiny">ViT Tiny (nhẹ hơn)</option>
+            <option value="cnn_resnet18">CNN ResNet18</option>
+            <option value="cnn_mobilenetv2">CNN MobileNetV2 (nhẹ hơn)</option>
+            <option value="gan">GAN Discriminator</option>
+          </select>
+          <button id="captureBtn" class="btn btn-capture">
+            Chụp Ảnh & Phân Tích
+          </button>
+          <button id="switchCameraBtn" class="btn">Đổi Camera</button>
+        </div>
+
+        <div id="spinner" class="spinner"></div>
+
+        <div id="progressContainer" style="display: none">
+          <div class="progress-bar">
+            <div id="progressBar" class="progress"></div>
+          </div>
+          <div id="progressText" style="text-align: center; font-size: 0.8rem">
+            Đang tải mô hình...
+          </div>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <div
+          id="predictionResults"
+          class="prediction-results"
+          style="display: none"
+        >
+          <h2>Kết Quả:</h2>
+          <div id="prediction" style="font-size: 1.5rem; margin: 8px 0"></div>
+          <div class="confidence-meter">
+            <div id="confidenceValue" class="confidence-value"></div>
+          </div>
+          <div id="confidenceText" class="prediction-info"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/main.js"></script>
+  </body>
+</html>

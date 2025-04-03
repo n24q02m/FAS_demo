@@ -1,0 +1,230 @@
+:root {
+  --primary-color: #4285f4;
+  --success-color: #0f9d58;
+  --danger-color: #db4437;
+  --background-color: #f8f9fa;
+  --card-color: #ffffff;
+  --text-color: #202124;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Roboto", sans-serif;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  padding: 16px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  text-align: center;
+  padding: 16px 0;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  color: var(--primary-color);
+}
+
+.description {
+  font-size: 0.9rem;
+  color: #5f6368;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--card-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 16px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.video-stream {
+  width: 100%;
+  border-radius: 8px;
+  transform: scaleX(-1);
+  background-color: #000;
+}
+
+.canvas {
+  display: none;
+}
+
+.btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  margin: 8px 0;
+  transition: background-color 0.3s;
+}
+
+.btn:hover {
+  background-color: #3367d6;
+}
+
+.btn:disabled {
+  background-color: #c5c5c5;
+  cursor: not-allowed;
+}
+
+.btn-capture {
+  background-color: var(--primary-color);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.model-select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: white;
+  font-size: 1rem;
+}
+
+.prediction-results {
+  text-align: center;
+  margin-top: 16px;
+  transition: opacity 0.3s;
+}
+
+.real {
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+.spoof {
+  color: var(--danger-color);
+  font-weight: bold;
+}
+
+.prediction-info {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.spinner {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+  margin: 16px auto;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.progress-bar {
+  height: 4px;
+  background-color: #e0e0e0;
+  margin: 16px 0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background-color: var(--primary-color);
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.confidence-meter {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.confidence-value {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease, background-color 0.3s;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 4px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: fadeIn 0.5s;
+}
+
+.error {
+  background-color: #ffebee;
+  color: var(--danger-color);
+}
+
+.info {
+  background-color: #e3f2fd;
+  color: var(--primary-color);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .btn {
+    padding: 10px 16px;
+  }
+}

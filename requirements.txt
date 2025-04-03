@@ -1,0 +1,10 @@
+flask
+flask-cors
+torch
+torchvision
+numpy
+Pillow
+huggingface-hub
+transformers
+timm
+requests
