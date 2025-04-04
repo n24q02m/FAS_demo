@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Face Anti-Spoofing</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 15px;
+        background-color: #f0f0f0;
+      }
+      img#preview-image {
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin-top: 15px;
+        display: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      #result {
+        font-size: 1.5em;
+        margin-top: 20px;
+        color: #333;
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        display: inline-block;
+        min-width: 200px;
+      }
+      #canvas {
+        display: none;
+      }
+      .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 25px 0;
+        flex-wrap: wrap;
+      }
+      button {
+        padding: 12px 20px;
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+      button:hover {
+        background-color: #3367d6;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+      .upload-btn-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+      }
+      .upload-btn-wrapper input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+      select {
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+        background-color: white;
+        margin: 0 10px;
+      }
+      .model-selection {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .real {
+        color: green;
+        background-color: #e8f5e9;
+      }
+      .fake {
+        color: #d32f2f;
+        background-color: #ffebee;
+      }
+      .error {
+        color: #ef6c00;
+        background-color: #fff8e1;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 14px;
+        color: #666;
+      }
+      @media (max-width: 600px) {
+        #result {
+          font-size: 1.2em;
+          min-width: 80%;
+        }
+        .button-group {
+          flex-direction: column;
+          align-items: center;
+        }
+        button {
+          width: 100%;
+          max-width: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Face Anti-Spoofing Demo</h1>
+
+    <!-- Khu vực xử lý ảnh -->
+    <div id="image-mode">
+      <img id="preview-image" alt="Ảnh đã chọn" />
+
+      <div class="button-group">
+        <div class="upload-btn-wrapper">
+          <button>Chọn ảnh</button>
+          <input type="file" id="file-input" accept="image/*" />
+        </div>
+        <button id="process-image-btn">Phân tích ảnh</button>
+      </div>
+    </div>
+
+    <div id="result">Vui lòng chọn ảnh để phân tích</div>
+
+    <div class="model-selection">
+      <label for="model-select">Chọn mô hình: </label>
+      <select id="model-select">
+        <option value="vit_base">Vision Transformer Base</option>
+        <option value="vit_tiny">Vision Transformer Tiny</option>
+        <option value="cnn_resnet18">CNN ResNet18</option>
+        <option value="cnn_mobilenetv2">CNN MobileNetV2</option>
+        <option value="gan">GAN Discriminator</option>
+      </select>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="footer">© 2025 Face Anti-Spoofing System</div>
+
+    <script>
+      // Các element cần sử dụng
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const resultDiv = document.getElementById("result");
+      const fileInput = document.getElementById("file-input");
+      const previewImage = document.getElementById("preview-image");
+      const processImageBtn = document.getElementById("process-image-btn");
+      const modelSelect = document.getElementById("model-select");
+
+      // Kết nối WebSocket với IP tự động
+      let SERVER_IP;
+      let ws;
+      let reconnectInterval;
+
+      // Hàm để lấy IP từ đường dẫn URL hiện tại
+      function getServerIP() {
+        const currentHost = window.location.hostname;
+        const currentPort =
+          window.location.port ||
+          (window.location.protocol === "https:" ? "443" : "80");
+        return `${currentHost}:${currentPort}`;
+      }
+
+      SERVER_IP = getServerIP();
+      console.log("Using server IP:", SERVER_IP);
+
+      // Chọn ảnh từ thiết bị
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            previewImage.src = event.target.result;
+            previewImage.style.display = "block";
+            // Reset kết quả
+            resultDiv.textContent =
+              "Ảnh đã được chọn. Nhấn 'Phân tích ảnh' để tiếp tục.";
+            resultDiv.className = "";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Phân tích ảnh đã chọn
+      processImageBtn.addEventListener("click", processImage);
+
+      function processImage() {
+        if (!previewImage.src || previewImage.src === window.location.href) {
+          resultDiv.textContent = "Vui lòng chọn ảnh trước!";
+          resultDiv.className = "error";
+          return;
+        }
+
+        resultDiv.textContent = "Đang xử lý...";
+        resultDiv.className = "";
+
+        // Tạo canvas với kích thước 224x224 để xử lý
+        canvas.width = 224;
+        canvas.height = 224;
+
+        // Vẽ ảnh lên canvas, tự động co giãn
+        const img = new Image();
+        img.onload = function () {
+          // Giữ tỷ lệ khung hình khi vẽ lên canvas
+          const aspectRatio = img.width / img.height;
+          let drawWidth, drawHeight, startX, startY;
+
+          if (aspectRatio > 1) {
+            // Ảnh ngang
+            drawHeight = canvas.height;
+            drawWidth = canvas.height * aspectRatio;
+            startX = (canvas.width - drawWidth) / 2;
+            startY = 0;
+          } else {
+            // Ảnh dọc
+            drawWidth = canvas.width;
+            drawHeight = canvas.width / aspectRatio;
+            startX = 0;
+            startY = (canvas.height - drawHeight) / 2;
+          }
+
+          ctx.drawImage(img, startX, startY, drawWidth, drawHeight);
+
+          // Gửi ảnh đến server
+          if (ws.readyState === WebSocket.OPEN) {
+            const imgData = canvas.toDataURL("image/jpeg", 0.8);
+            ws.send(imgData);
+          } else {
+            resultDiv.textContent = "Lỗi: Không thể kết nối server";
+            resultDiv.className = "error";
+            // Thử kết nối lại
+            connectWebSocket();
+          }
+        };
+        img.src = previewImage.src;
+      }
+
+      function connectWebSocket() {
+        // Sử dụng giao thức phù hợp với giao thức hiện tại của trang
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        ws = new WebSocket(`${protocol}//${SERVER_IP}/ws`);
+
+        ws.onopen = () => {
+          console.log("WebSocket connected");
+          if (reconnectInterval) {
+            clearInterval(reconnectInterval);
+            reconnectInterval = null;
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          resultDiv.textContent = "Lỗi: Không thể kết nối server";
+          resultDiv.className = "error";
+        };
+
+        ws.onmessage = (event) => {
+          console.log("Received:", event.data);
+          try {
+            const response = JSON.parse(event.data);
+            if (response.error) {
+              // Xử lý lỗi từ backend
+              resultDiv.textContent = `Lỗi: ${response.error}`;
+              resultDiv.className = "error";
+            } else {
+              // Xử lý kết quả dự đoán
+              const resultText = `Kết quả: ${
+                response.result
+              } (score: ${response.score.toFixed(4)})`;
+              resultDiv.textContent = resultText;
+              resultDiv.className =
+                response.result === "Thật" ? "real" : "fake";
+            }
+          } catch (e) {
+            // Xử lý lỗi parsing JSON
+            console.error("JSON parse error:", e);
+            resultDiv.textContent = `Lỗi: Dữ liệu không hợp lệ từ server`;
+            resultDiv.className = "error";
+          }
+        };
+
+        ws.onclose = () => {
+          console.log("WebSocket closed");
+          if (resultDiv.textContent !== "Vui lòng chọn ảnh để phân tích") {
+            resultDiv.textContent = "Lỗi: Kết nối server bị ngắt";
+            resultDiv.className = "error";
+          }
+
+          // Thử kết nối lại sau 5 giây
+          if (!reconnectInterval) {
+            reconnectInterval = setInterval(() => {
+              console.log("Attempting to reconnect...");
+              connectWebSocket();
+            }, 5000);
+          }
+        };
+      }
+
+      // Khởi tạo kết nối WebSocket
+      connectWebSocket();
+
+      // Lấy danh sách mô hình từ server
+      async function getModels() {
+        try {
+          const response = await fetch(
+            `${window.location.protocol}//${SERVER_IP}/models`
+          );
+          const data = await response.json();
+
+          // Xóa các option hiện tại
+          modelSelect.innerHTML = "";
+
+          // Thêm các mô hình từ server
+          data.available_models.forEach((model) => {
+            const option = document.createElement("option");
+            option.value = model;
+            option.textContent = model;
+            modelSelect.appendChild(option);
+          });
+
+          // Đặt mô hình hiện tại là đã chọn
+          modelSelect.value = data.current_model;
+        } catch (error) {
+          console.error("Error fetching models:", error);
+        }
+      }
+
+      // Gọi hàm để lấy danh sách mô hình
+      getModels();
+
+      // Xử lý sự kiện thay đổi mô hình
+      modelSelect.addEventListener("change", async () => {
+        const selectedModel = modelSelect.value;
+        try {
+          resultDiv.textContent = `Đang đổi sang mô hình ${selectedModel}...`;
+          const response = await fetch(
+            `${window.location.protocol}//${SERVER_IP}/select_model/${selectedModel}`,
+            {
+              method: "POST",
+            }
+          );
+          const data = await response.json();
+
+          if (data.success) {
+            resultDiv.textContent = `Đã chuyển sang mô hình ${selectedModel}`;
+            // Tự động phân tích lại ảnh nếu đã có ảnh
+            if (previewImage.style.display === "block") {
+              setTimeout(processImage, 500);
+            }
+          } else {
+            resultDiv.textContent = `Lỗi: ${data.error}`;
+            resultDiv.className = "error";
+          }
+        } catch (error) {
+          console.error("Error changing model:", error);
+          resultDiv.textContent = `Lỗi khi đổi mô hình: ${error.message}`;
+          resultDiv.className = "error";
+        }
+      });
+    </script>
+  </body>
+</html>
